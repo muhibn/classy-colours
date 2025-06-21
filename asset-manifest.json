@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/classy-colours/static/css/main.13c4dc0a.css",
+    "main.js": "/classy-colours/static/js/main.7b881879.js",
+    "static/js/453.96b31103.chunk.js": "/classy-colours/static/js/453.96b31103.chunk.js",
+    "static/media/hero-image.png": "/classy-colours/static/media/hero-image.067df6db155fee1c3b28.png",
+    "static/media/logo.png": "/classy-colours/static/media/logo.85a2d9505c22470d804b.png",
+    "index.html": "/classy-colours/index.html",
+    "main.13c4dc0a.css.map": "/classy-colours/static/css/main.13c4dc0a.css.map",
+    "main.7b881879.js.map": "/classy-colours/static/js/main.7b881879.js.map",
+    "453.96b31103.chunk.js.map": "/classy-colours/static/js/453.96b31103.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.13c4dc0a.css",
+    "static/js/main.7b881879.js"
+  ]
+}
