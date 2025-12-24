@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Container,
   Row,
   Col,
   Card,
-  Badge,
   ListGroup,
   Alert,
   Form,
@@ -16,21 +15,49 @@ import {
   GeoAlt,
   Clock,
   InfoCircle,
-  CheckCircle,
-  ShieldCheck,
-  Palette,
-  StarFill,
   PersonFill,
   ClipboardCheck,
   ChatLeftText,
-  Send
+  Send,
+  Palette
 } from 'react-bootstrap-icons';
+import emailjs from '@emailjs/browser';
 import './ContactPage.css';
 
 const ContactPage = () => {
+  const form = useRef();
+  const [statusMessage, setStatusMessage] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const sendEmail = (e) => {
+    e.preventDefault();
+    setSending(true);
+
+    emailjs
+      .sendForm(
+      'service_rywobz8',
+      'template_hr4iolj',
+        form.current,
+      '-4CAsNbCXUOQhfA0k'
+      )
+      .then(
+        (result) => {
+          console.log(result.text);
+          setStatusMessage('✅ Your message has been sent successfully!');
+          setSending(false);
+          form.current.reset();
+        },
+        (error) => {
+          console.error(error.text);
+          setStatusMessage('❌ Failed to send message. Please try again.');
+          setSending(false);
+        }
+      );
+  };
+
   return (
     <Container fluid className="contact-page px-0">
-      
+
       {/* Hero Section */}
       <section className="contact-hero bg-gradient-primary text-white py-3">
         <Container>
@@ -46,7 +73,7 @@ const ContactPage = () => {
       <section className="py-5 bg-light">
         <Container>
           <Row className="g-4">
-            
+
             {/* Contact Info */}
             <Col lg={5}>
               <Card className="border-0 shadow-sm h-100 contact-info-card">
@@ -96,18 +123,9 @@ const ContactPage = () => {
                       Business Hours
                     </h6>
                     <ul className="list-unstyled ps-4 mb-0">
-                      <li className="mb-2 d-flex align-items-center">
-                        <span className="bullet-point me-2">•</span>
-                        <span>Monday - Friday: 8:00 AM - 5:00 PM</span>
-                      </li>
-                      <li className="mb-2 d-flex align-items-center">
-                        <span className="bullet-point me-2">•</span>
-                        <span>Saturday: 9:00 AM - 2:00 PM</span>
-                      </li>
-                      <li className="d-flex align-items-center">
-                        <span className="bullet-point me-2">•</span>
-                        <span>Sunday: Closed</span>
-                      </li>
+                      <li>Monday - Friday: 8:00 AM - 5:00 PM</li>
+                      <li>Saturday: 9:00 AM - 2:00 PM</li>
+                      <li>Sunday: Closed</li>
                     </ul>
                   </div>
 
@@ -137,142 +155,132 @@ const ContactPage = () => {
                     </div>
                   </div>
                 </Card.Header>
-                
-                <Card.Body className="p-4">
-                  <div className="form-intro mb-4">
-                    <p className="lead text-muted">
-                      Have questions about our services? Fill out the form below and we'll respond within <span className="text-primary fw-bold">24 hours</span>.
-                    </p>
-                  </div>
 
-                  <div className="contact-form-container">
-                    <Form>
-                      <Row className="g-3">
-                        <Col md={6}>
-                          <Form.Group controlId="formName">
-                            <Form.Label className="fw-medium">Full Name</Form.Label>
-                            <div className="input-group">
-                              <span className="input-group-text bg-light border-end-0">
-                                <PersonFill className="text-muted" size={18} />
-                              </span>
-                              <Form.Control 
-                                type="text" 
-                                placeholder="Your name" 
-                                className="border-start-0 ps-1"
-                              />
-                            </div>
-                          </Form.Group>
-                        </Col>
-                        
-                        <Col md={6}>
-                          <Form.Group controlId="formEmail">
-                            <Form.Label className="fw-medium">Email Address</Form.Label>
-                            <div className="input-group">
-                              <span className="input-group-text bg-light border-end-0">
-                                <Envelope className="text-muted" size={18} />
-                              </span>
-                              <Form.Control 
-                                type="email" 
-                                placeholder="your.email@example.com" 
-                                className="border-start-0 ps-1"
-                              />
-                            </div>
-                          </Form.Group>
-                        </Col>
-                        
-                        <Col md={6}>
-                          <Form.Group controlId="formPhone">
-                            <Form.Label className="fw-medium">Phone Number</Form.Label>
-                            <div className="input-group">
-                              <span className="input-group-text bg-light border-end-0">
-                                <Telephone className="text-muted" size={18} />
-                              </span>
-                              <Form.Control 
-                                type="tel" 
-                                placeholder="0400 000 000" 
-                                className="border-start-0 ps-1"
-                              />
-                            </div>
-                          </Form.Group>
-                        </Col>
-                        
-                        <Col md={6}>
-                          <Form.Group controlId="formService">
-                            <Form.Label className="fw-medium">Service Needed</Form.Label>
-                            <div className="input-group">
-                              <span className="input-group-text bg-light border-end-0">
-                                <ClipboardCheck className="text-muted" size={18} />
-                              </span>
-                              <Form.Select className="border-start-0 ps-1">
-                                <option>Select a service</option>
-                                <option>Interior Painting</option>
-                                <option>Exterior Painting</option>
-                                <option>Commercial Painting</option>
-                                <option>Color Consultation</option>
-                              </Form.Select>
-                            </div>
-                          </Form.Group>
-                        </Col>
-                        
-                        <Col xs={12}>
-                          <Form.Group controlId="formMessage">
-                            <Form.Label className="fw-medium">Your Message</Form.Label>
-                            <div className="input-group">
-                              <span className="input-group-text bg-light border-end-0 align-items-start pt-2">
-                                <ChatLeftText className="text-muted" size={18} />
-                              </span>
-                              <Form.Control 
-                                as="textarea" 
-                                rows={4} 
-                                placeholder="Tell us about your project..." 
-                                className="border-start-0 ps-1"
-                              />
-                            </div>
-                          </Form.Group>
-                        </Col>
-                        
-                        <Col xs={12}>
-                          <div className="d-grid">
-                            <Button 
-                              variant="primary" 
-                              size="lg" 
-                              className="fw-bold py-3"
-                            >
-                              <Send className="me-2" size={18} />
-                              Submit Inquiry
-                            </Button>
+                <Card.Body className="p-4">
+                  <Form ref={form} onSubmit={sendEmail}>
+                    <Row className="g-3">
+                      <Col md={6}>
+                        <Form.Group controlId="formName">
+                          <Form.Label className="fw-medium">Full Name</Form.Label>
+                          <div className="input-group">
+                            <span className="input-group-text bg-light border-end-0">
+                              <PersonFill className="text-muted" size={18} />
+                            </span>
+                            <Form.Control
+                              type="text"
+                              name="user_name"
+                              placeholder="Your name"
+                              required
+                              className="border-start-0 ps-1"
+                            />
                           </div>
-                        </Col>
-                      </Row>
-                    </Form>
-                  </div>
+                        </Form.Group>
+                      </Col>
 
-                  {/* Why Choose Us - Enhanced */}
-                 </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-        </Container>
-      </section>
+                      <Col md={6}>
+                        <Form.Group controlId="formEmail">
+                          <Form.Label className="fw-medium">Email Address</Form.Label>
+                          <div className="input-group">
+                            <span className="input-group-text bg-light border-end-0">
+                              <Envelope className="text-muted" size={18} />
+                            </span>
+                            <Form.Control
+                              type="email"
+                              name="user_email"
+                              placeholder="your.email@example.com"
+                              required
+                              className="border-start-0 ps-1"
+                            />
+                          </div>
+                        </Form.Group>
+                      </Col>
 
-      {/* Testimonial Section */}
-      <section className="testimonial-section bg-white py-5 mt-4">
-        <Container>
-          <Row className="justify-content-center">
-            <Col lg={8}>
-              <Card className="text-center shadow-sm border-0 testimonial-card">
-                <Card.Body className="p-4">
-                  <blockquote className="blockquote mb-0">
-                    <p className="mb-4 testimonial-text">
-                      "Classy Colours transformed our home with their exceptional painting service.
-                      The team was professional, punctual, and the quality of work was outstanding.
-                      Highly recommended!"
-                    </p>
-                    <footer className="blockquote-footer mt-3">
-                      <span className="d-inline-block bg-primary rounded-circle me-2" style={{width: '8px', height: '8px'}}></span>
-                      Sarah J., <cite>Happy Homeowner</cite>
-                    </footer>
-                  </blockquote>
+                      <Col md={6}>
+                        <Form.Group controlId="formPhone">
+                          <Form.Label className="fw-medium">Phone Number</Form.Label>
+                          <div className="input-group">
+                            <span className="input-group-text bg-light border-end-0">
+                              <Telephone className="text-muted" size={18} />
+                            </span>
+                            <Form.Control
+                              type="tel"
+                              name="user_phone"
+                              placeholder="0400 000 000"
+                              className="border-start-0 ps-1"
+                            />
+                          </div>
+                        </Form.Group>
+                      </Col>
+
+                      <Col md={6}>
+                        <Form.Group controlId="formService">
+                          <Form.Label className="fw-medium">Service Needed</Form.Label>
+                          <div className="input-group">
+                            <span className="input-group-text bg-light border-end-0">
+                              <ClipboardCheck className="text-muted" size={18} />
+                            </span>
+                            <Form.Select
+                              name="user_service"
+                              className="border-start-0 ps-1"
+                              required
+                            >
+                              <option value="">Select a service</option>
+                              <option>Interior Painting</option>
+                              <option>Exterior Painting</option>
+                              <option>Commercial Painting</option>
+                              <option>Color Consultation</option>
+                            </Form.Select>
+                          </div>
+                        </Form.Group>
+                      </Col>
+
+                      <Col xs={12}>
+                        <Form.Group controlId="formMessage">
+                          <Form.Label className="fw-medium">Your Message</Form.Label>
+                          <div className="input-group">
+                            <span className="input-group-text bg-light border-end-0 align-items-start pt-2">
+                              <ChatLeftText className="text-muted" size={18} />
+                            </span>
+                            <Form.Control
+                              as="textarea"
+                              name="message"
+                              rows={4}
+                              placeholder="Tell us about your project..."
+                              required
+                              className="border-start-0 ps-1"
+                            />
+                          </div>
+                        </Form.Group>
+                      </Col>
+
+                      <Col xs={12}>
+                        <div className="d-grid">
+                          <Button
+                            variant="primary"
+                            size="lg"
+                            className="fw-bold py-3"
+                            type="submit"
+                            disabled={sending}
+                          >
+                            {sending ? 'Sending...' : (
+                              <>
+                                <Send className="me-2" size={18} />
+                                Submit Inquiry
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </Col>
+                    </Row>
+                  </Form>
+
+                  {statusMessage && (
+                    <div className="mt-3 text-center">
+                      <Alert variant={statusMessage.startsWith('✅') ? 'success' : 'danger'}>
+                        {statusMessage}
+                      </Alert>
+                    </div>
+                  )}
                 </Card.Body>
               </Card>
             </Col>
