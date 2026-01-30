@@ -1,444 +1,534 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Modal, Carousel } from 'react-bootstrap';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { Container, Row, Col, Modal, Carousel, Spinner } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './PortfolioPage.css';
 
+// Memoized components for better performance
+const ImageFallback = memo(({ photo, className, style }) => (
+  <div 
+    className={`image-fallback ${className}`}
+    style={{ 
+      backgroundColor: photo.color, 
+      ...style 
+    }}
+  >
+    <div className="fallback-content">
+      <i className="bi bi-image"></i>
+      <span className="fallback-title">{photo.title}</span>
+    </div>
+  </div>
+));
+
+const ProjectImage = memo(({ photo, className, style }) => {
+  const [imageError, setImageError] = useState(false);
+  
+  if (imageError || !photo.image) {
+    return <ImageFallback photo={photo} className={className} style={style} />;
+  }
+  
+  return (
+    <img 
+      src={photo.image} 
+      alt={photo.title}
+      className={`project-image ${className}`}
+      style={style}
+      loading="lazy"
+      onError={() => setImageError(true)}
+    />
+  );
+});
+
+const FilterButton = memo(({ filter, activeFilter, onClick }) => (
+  <button
+    className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
+    onClick={() => onClick(filter.id)}
+    aria-pressed={activeFilter === filter.id}
+  >
+    {filter.label}
+  </button>
+));
+
+const ProjectCard = memo(({ project, onViewProject }) => {
+  const handleClick = useCallback(() => {
+    onViewProject(project);
+  }, [project, onViewProject]);
+
+  return (
+    <Col xs={12} md={6} lg={4} xl={3} className="project-card-col">
+      <div className="project-card" onClick={handleClick} role="button" tabIndex={0}>
+        <div className="project-card-image">
+          <ProjectImage 
+            photo={project.photos[0]} 
+            style={{ height: '220px' }}
+          />
+          <div className="project-overlay">
+            <div className="overlay-content">
+              <span className="category-badge">{project.category}</span>
+              <h5 className="project-title">{project.title}</h5>
+              <div className="project-meta">
+                <span>
+                  <i className="bi bi-geo-alt"></i> {project.location}
+                </span>
+                <span>
+                  <i className="bi bi-calendar"></i> {project.year}
+                </span>
+              </div>
+            </div>
+            <button className="view-project-btn" aria-label="View project">
+              <i className="bi bi-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div className="project-card-content">
+          <div className="project-stats">
+            <div className="stat">
+              <i className="bi bi-clock"></i>
+              <span>{project.duration}</span>
+            </div>
+            <div className="stat">
+              <i className="bi bi-rulers"></i>
+              <span>{project.squareFootage}</span>
+            </div>
+            <div className="stat">
+              <i className="bi bi-paint-bucket"></i>
+              <span>{project.paintType.split(' ')[0]}</span>
+            </div>
+          </div>
+          <div className="project-tags">
+            <span className="project-tag">
+              <i className="bi bi-star-fill"></i>
+              {project.rating}/5
+            </span>
+            <span className="project-tag">
+              <i className="bi bi-images"></i>
+              {project.photos.length} photos
+            </span>
+          </div>
+        </div>
+      </div>
+    </Col>
+  );
+});
+
+const ProjectModal = memo(({ project, show, onHide }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  
+  const handleSelect = useCallback((selectedIndex) => {
+    setActiveIndex(selectedIndex);
+  }, []);
+
+  const handleThumbnailClick = useCallback((index) => {
+    setActiveIndex(index);
+  }, []);
+
+  if (!project) return null;
+
+  return (
+    <Modal 
+      show={show} 
+      onHide={onHide}
+      size="xl"
+      centered
+      className="project-modal"
+      backdropClassName="modal-backdrop-custom"
+      aria-labelledby="project-modal-title"
+    >
+      <Modal.Header closeButton className="modal-header-custom">
+        <Modal.Title id="project-modal-title" className="modal-title-custom">
+          <div className="d-flex flex-column">
+            <div className="d-flex align-items-center mb-2">
+              <span className="modal-category">{project.category}</span>
+              <span className="modal-rating ms-2">
+                <i className="bi bi-star-fill"></i>
+                {project.rating}/5
+              </span>
+            </div>
+            <div className="modal-project-info">
+              <h3 className="modal-project-title">{project.title}</h3>
+              <div className="modal-project-subtitle">
+                <span><i className="bi bi-geo-alt"></i> {project.location}</span>
+                <span><i className="bi bi-calendar"></i> {project.year}</span>
+                <span><i className="bi bi-images"></i> {project.photos.length} photos</span>
+              </div>
+            </div>
+          </div>
+        </Modal.Title>
+      </Modal.Header>
+      
+      <Modal.Body className="modal-body-custom">
+        {/* Main Carousel - Full Width */}
+        <div className="main-carousel-section">
+          <Carousel 
+            activeIndex={activeIndex} 
+            onSelect={handleSelect}
+            fade 
+            indicators={true}
+            className="project-carousel"
+          >
+            {project.photos.map((photo, index) => (
+              <Carousel.Item key={`${photo.id}-${index}`}>
+                <div className="carousel-image-container">
+                  <ProjectImage 
+                    photo={photo}
+                    className="main-carousel-image"
+                    style={{ height: '500px' }}
+                  />
+                  <div className="carousel-caption">
+                    <h5>{photo.title}</h5>
+                    <span className="photo-counter">
+                      {index + 1} / {project.photos.length}
+                    </span>
+                  </div>
+                </div>
+              </Carousel.Item>
+            ))}
+          </Carousel>
+        </div>
+
+        {/* Thumbnail Gallery - Full Width */}
+        <ThumbnailGallery 
+          photos={project.photos}
+          activeIndex={activeIndex}
+          onThumbnailClick={handleThumbnailClick}
+        />
+      </Modal.Body>
+
+      <Modal.Footer className="modal-footer-custom">
+        <button className="btn btn-outline-secondary" onClick={onHide}>
+          Close Gallery
+        </button>
+        <button className="btn btn-primary">
+          <i className="bi bi-whatsapp me-2"></i>
+          Get Free Quote
+        </button>
+      </Modal.Footer>
+    </Modal>
+  );
+});
+
+const ThumbnailGallery = memo(({ photos, activeIndex, onThumbnailClick }) => (
+  <div className="thumbnail-gallery-section">
+    <div className="gallery-header">
+      <h4 className="gallery-title">Browse All Photos</h4>
+      <span className="gallery-count">{photos.length} photos</span>
+    </div>
+    
+    <div className="thumbnails-container">
+      {photos.map((photo, index) => (
+        <div 
+          key={`thumb-${photo.id}-${index}`}
+          className={`thumbnail-item ${index === activeIndex ? 'active' : ''}`}
+          onClick={() => onThumbnailClick(index)}
+          role="button"
+          tabIndex={0}
+          onKeyPress={(e) => e.key === 'Enter' && onThumbnailClick(index)}
+          aria-label={`View photo ${index + 1}: ${photo.title}`}
+        >
+          <ProjectImage 
+            photo={photo}
+            className="thumbnail-image"
+            style={{ height: '120px' }}
+          />
+          <div className="thumbnail-label">
+            <span className="thumbnail-index">{index + 1}</span>
+            <span className="thumbnail-title">{photo.title}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+));
+
+const LoadingSpinner = memo(() => (
+  <Container className="portfolio-loading d-flex justify-content-center align-items-center">
+    <Spinner animation="border" variant="primary" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </Spinner>
+  </Container>
+));
+
+// Main Component
 const PortfolioPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const imagePaths = {
-    project1: [
-      require('../../assets/images/portfolio/residential/interior1.jpeg'),
-      require('../../assets/images/portfolio/residential/interior2.jpg'),
-      require('../../assets/images/portfolio/residential/interior3.jpg'),
-      require('../../assets/images/portfolio/residential/interior4.jpg'),
-      require('../../assets/images/portfolio/residential/interior5.jpg'),
+  const imagePaths = useMemo(() => ({
+    residential1: [
+      require('../../assets/images/portfolio/residential1/interior1.jpeg'),
+      require('../../assets/images/portfolio/residential1/interior2.jpeg'),
+      require('../../assets/images/portfolio/residential1/interior3.jpeg'),
+      require('../../assets/images/portfolio/residential1/interior4.jpeg'),
+      require('../../assets/images/portfolio/residential1/interior5.jpeg'),
     ],
-    project2: [
-      require('../../assets/images/portfolio/commercial/exterior1.jpg'),
-      require('../../assets/images/portfolio/commercial/exterior2.jpg'),
-      require('../../assets/images/portfolio/commercial/exterior3.jpg'),
-      require('../../assets/images/portfolio/commercial/exterior4.jpg'),
-      require('../../assets/images/portfolio/commercial/exterior5.jpg'),
+        residential2: [
+      require('../../assets/images/portfolio/residential2/interior1.jpeg'),
+      require('../../assets/images/portfolio/residential2/interior2.jpeg'),
+      require('../../assets/images/portfolio/residential2/interior3.jpeg'),
+      require('../../assets/images/portfolio/residential2/interior4.jpeg'),
+      require('../../assets/images/portfolio/residential2/interior5.jpeg'),
     ],
-    project3: [
-      require('../../assets/images/portfolio/texture/texture1.jpg'),
-      require('../../assets/images/portfolio/texture/texture2.jpg'),
-      require('../../assets/images/portfolio/texture/texture3.jpg'),
-      require('../../assets/images/portfolio/texture/texture4.jpg'),
-      require('../../assets/images/portfolio/texture/texture5.jpg'),
+    commercail: [
+      require('../../assets/images/portfolio/commercial1/exterior1.jpeg'),
+      require('../../assets/images/portfolio/commercial1/exterior2.jpeg'),
+      require('../../assets/images/portfolio/commercial1/exterior3.jpeg'),
+      require('../../assets/images/portfolio/commercial1/exterior4.jpeg'),
+      require('../../assets/images/portfolio/commercial1/exterior5.jpeg'),
     ],
-  };
+    texture1: [
+      require('../../assets/images/portfolio/texture1/texture1.jpg'),
+      require('../../assets/images/portfolio/texture1/texture2.jpg'),
+      require('../../assets/images/portfolio/texture1/texture3.jpg'),
+      require('../../assets/images/portfolio/texture1/texture4.jpg'),
+      require('../../assets/images/portfolio/texture1/texture5.jpg'),
+    ],
+  }), []);
 
-  const fallbackColors = [
-    ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
-    ['#A29BFE', '#FD79A8', '#55EFC4', '#74B9FF', '#FFEAA7'],
-    ['#D63031', '#00B894', '#0984E3', '#6C5CE7', '#FDCB6E']
-  ];
-
-  const projects = [
+  const projects = useMemo(() => [
     { 
       id: 1, 
-      category: 'Interior',
+      title: 'Modern Apartment Renovation',
+      category: 'interior',
       duration: '2 weeks',
       location: 'Downtown Apartment',
       squareFootage: '1,200 sq ft',
       paintType: 'Eco-friendly premium paint',
+      rating: 5,
+      year: '2023',
       photos: [
-        {
-          id: 1,
-          image: imagePaths.project1[0] || null,
-          color: '#FF6B6B'
-        },
-        {
-          id: 2,
-          image: imagePaths.project1[1] || null,
-          color: '#4ECDC4'
-        },
-        {
-          id: 3,
-          image: imagePaths.project1[2] || null,
-          color: '#45B7D1'
-        },
-        {
-          id: 4,
-          image: imagePaths.project1[3] || null,
-          color: '#96CEB4'
-        },
-        {
-          id: 5,
-          image: imagePaths.project1[4] || null,
-          color: '#FFEAA7'
-        }
-      ],
-      testimonial: "The team transformed our apartment with precision and care. The color choices were perfect!"
+        { id: 1, image: imagePaths.residential1[0], color: '#FF6B6B', title: 'Living Room' },
+        { id: 2, image: imagePaths.residential1[1], color: '#4ECDC4', title: 'Bedroom' },
+        { id: 3, image: imagePaths.residential1[2], color: '#45B7D1', title: 'Kitchen' },
+        { id: 4, image: imagePaths.residential1[3], color: '#96CEB4', title: 'Bathroom' },
+        { id: 5, image: imagePaths.residential1[4], color: '#FFEAA7', title: 'Final View' }
+      ]
     },
-    { 
+       { 
       id: 2, 
-      category: 'Exterior',
-      duration: '4 weeks',
-      location: 'Corporate Headquarters',
-      squareFootage: '15,000 sq ft',
-      paintType: 'Weatherproof industrial coating',
+      title: 'Modern Apartment Renovation',
+      category: 'interior',
+      duration: '2 weeks',
+      location: 'Downtown Apartment',
+      squareFootage: '1,200 sq ft',
+      paintType: 'Eco-friendly premium paint',
+      rating: 5,
+      year: '2023',
       photos: [
-        {
-          id: 1,
-          image: imagePaths.project2[0] || null,
-          color: '#A29BFE'
-        },
-        {
-          id: 2,
-          image: imagePaths.project2[1] || null,
-          color: '#FD79A8'
-        },
-        {
-          id: 3,
-          image: imagePaths.project2[2] || null,
-          color: '#55EFC4'
-        },
-        {
-          id: 4,
-          image: imagePaths.project2[3] || null,
-          color: '#74B9FF'
-        },
-        {
-          id: 5,
-          image: imagePaths.project2[4] || null,
-          color: '#FFEAA7'
-        }
-      ],
-      testimonial: "Professional from start to finish. Our building looks brand new!"
+        { id: 1, image: imagePaths.residential2[0], color: '#FF6B6B', title: 'Living Room' },
+        { id: 2, image: imagePaths.residential2[1], color: '#4ECDC4', title: 'Bedroom' },
+        { id: 3, image: imagePaths.residential2[2], color: '#45B7D1', title: 'Kitchen' },
+        { id: 4, image: imagePaths.residential2[3], color: '#96CEB4', title: 'Bathroom' },
+        { id: 5, image: imagePaths.residential2[4], color: '#FFEAA7', title: 'Final View' }
+      ]
     },
     { 
       id: 3, 
-      category: 'Specialty',
+      title: 'Corporate Headquarters Facade',
+      category: 'exterior',
+      duration: '4 weeks',
+      location: 'Tech Park Corporate Campus',
+      squareFootage: '15,000 sq ft',
+      paintType: 'Weatherproof industrial coating',
+      rating: 5,
+      year: '2023',
+      photos: [
+        { id: 1, image: imagePaths.commercail[0], color: '#A29BFE', title: 'Front Entrance' },
+        { id: 2, image: imagePaths.commercail[1], color: '#FD79A8', title: 'Building Facade' },
+        { id: 3, image: imagePaths.commercail[2], color: '#55EFC4', title: 'Side View' },
+        { id: 4, image: imagePaths.commercail[3], color: '#74B9FF', title: 'Detail Work' },
+        { id: 5, image: imagePaths.commercail[4], color: '#FFEAA7', title: 'Completed' }
+      ]
+    },
+    { 
+      id: 4, 
+      title: 'Luxury Hotel Lobby Texturing',
+      category: 'specialty',
       duration: '3 weeks',
-      location: 'Luxury Hotel Lobby',
+      location: 'Grand Plaza Hotel',
       squareFootage: '3,500 sq ft',
       paintType: 'Custom textured coating',
+      rating: 5,
+      year: '2024',
       photos: [
-        {
-          id: 1,
-          image: imagePaths.project3[0] || null,
-          color: '#D63031'
-        },
-        {
-          id: 2,
-          image: imagePaths.project3[1] || null,
-          color: '#00B894'
-        },
-        {
-          id: 3,
-          image: imagePaths.project3[2] || null,
-          color: '#0984E3'
-        },
-        {
-          id: 4,
-          image: imagePaths.project3[3] || null,
-          color: '#6C5CE7'
-        },
-        {
-          id: 5,
-          image: imagePaths.project3[4] || null,
-          color: '#FDCB6E'
-        }
-      ],
-      testimonial: "The textured finish added incredible depth to our hotel lobby. Exceptional craftsmanship!"
+        { id: 1, image: imagePaths.texture1[0], color: '#D63031', title: 'Texturing' },
+        { id: 2, image: imagePaths.texture1[1], color: '#00B894', title: 'Color Application' },
+        { id: 3, image: imagePaths.texture1[2], color: '#0984E3', title: 'Detail' },
+        { id: 4, image: imagePaths.texture1[3], color: '#6C5CE7', title: 'Finishing' },
+        { id: 5, image: imagePaths.texture1[4], color: '#FDCB6E', title: 'Final Result' }
+      ]
+    },
+    { 
+      id: 5, 
+      title: 'Contemporary Office Interior',
+      category: 'interior',
+      duration: '3 weeks',
+      location: 'Creative Agency Office',
+      squareFootage: '2,800 sq ft',
+      paintType: 'Low-VOC premium paint',
+      rating: 4.5,
+      year: '2023',
+      photos: [
+        { id: 1, image: null, color: '#FF9F43', title: 'Workspace' },
+        { id: 2, image: null, color: '#5F27CD', title: 'Conference' },
+        { id: 3, image: null, color: '#54A0FF', title: 'Reception' },
+        { id: 4, image: null, color: '#00D2D3', title: 'Break Room' },
+        { id: 5, image: null, color: '#F368E0', title: 'Office' }
+      ]
+    },
+    { 
+      id: 6, 
+      title: 'Historic Building Restoration',
+      category: 'exterior',
+      duration: '6 weeks',
+      location: 'Heritage District',
+      squareFootage: '8,500 sq ft',
+      paintType: 'Historical restoration coating',
+      rating: 4.8,
+      year: '2023',
+      photos: [
+        { id: 1, image: null, color: '#FF6B6B', title: 'Before' },
+        { id: 2, image: null, color: '#4ECDC4', title: 'Process' },
+        { id: 3, image: null, color: '#45B7D1', title: 'Color Match' },
+        { id: 4, image: null, color: '#96CEB4', title: 'Details' },
+        { id: 5, image: null, color: '#FFEAA7', title: 'After' }
+      ]
+    },
+    { 
+      id: 7, 
+      title: 'Retail Store Modernization',
+      category: 'interior',
+      duration: '2 weeks',
+      location: 'Shopping Mall Unit',
+      squareFootage: '3,200 sq ft',
+      paintType: 'Commercial1-grade coating',
+      rating: 4.7,
+      year: '2024',
+      photos: [
+        { id: 1, image: null, color: '#A29BFE', title: 'Store Front' },
+        { id: 2, image: null, color: '#FD79A8', title: 'Interior' },
+        { id: 3, image: null, color: '#55EFC4', title: 'Brand Colors' },
+        { id: 4, image: null, color: '#74B9FF', title: 'Setup' },
+        { id: 5, image: null, color: '#FFEAA7', title: 'Final' }
+      ]
     }
-  ];
+  ], [imagePaths]);
 
-  const handleViewProject = (project) => {
+  const filters = useMemo(() => [
+    { id: 'all', label: 'All Projects' },
+    { id: 'interior', label: 'Interior' },
+    { id: 'exterior', label: 'Exterior' },
+    { id: 'specialty', label: 'Specialty' }
+  ], []);
+
+  const filteredProjects = useMemo(() => 
+    activeFilter === 'all' 
+      ? projects 
+      : projects.filter(project => project.category === activeFilter),
+    [activeFilter, projects]
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleViewProject = useCallback((project) => {
     setSelectedProject(project);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setShowModal(false);
-    setSelectedProject(null);
-  };
+    setTimeout(() => setSelectedProject(null), 300);
+  }, []);
 
-  const renderImage = (photo, className = '', style = {}) => {
-    if (photo.image) {
-      return (
-        <img 
-          src={photo.image} 
-          alt="Project photo"
-          className={className}
-          style={style}
-          onError={(e) => {
-            e.target.style.display = 'none';
-            e.target.nextSibling.style.display = 'block';
-          }}
-        />
-      );
-    }
-    return null;
-  };
+  const handleFilterChange = useCallback((filterId) => {
+    setActiveFilter(filterId);
+  }, []);
 
-  const renderImageOrColor = (photo, className = '', style = {}) => {
-    return (
-      <>
-        {photo.image && (
-          <img 
-            src={photo.image} 
-            alt="Project photo"
-            className={className}
-            style={style}
-            onError={(e) => {
-              e.target.style.display = 'none';
-              const fallback = e.target.parentElement.querySelector('.image-fallback');
-              if (fallback) fallback.style.display = 'block';
-            }}
-          />
-        )}
-        <div 
-          className="image-fallback"
-          style={{
-            ...style,
-            backgroundColor: photo.color,
-            display: photo.image ? 'none' : 'block'
-          }}
-        >
-          <div className="fallback-content">
-            <span className="fallback-text">Project Image</span>
-          </div>
-        </div>
-      </>
-    );
-  };
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <>
-      <Container fluid className="portfolio-page py-5">
-        <Row className="justify-content-center mb-5">
-          <Col xs={12} className="text-center">
-            <h1 className="display-4 mb-3">Our Portfolio</h1>
-            <p className="lead text-muted">
-              View our gallery of completed projects showcasing our quality craftsmanship
-            </p>
-          </Col>
-        </Row>
+      <Container fluid className="portfolio-page">
+        {/* Hero Section */}
+        <div className="portfolio-hero">
+          <Container>
+            <Row className="justify-content-center">
+              <Col xs={12} className="text-center">
+                <h1 className="hero-title">Our Portfolio</h1>
+                <p className="hero-subtitle">
+                  Browse our gallery of completed painting projects showcasing quality craftsmanship
+                </p>
+              </Col>
+            </Row>
+          </Container>
+        </div>
 
-        <Row className="g-4">
-          {projects.map(project => (
-            <Col key={project.id} xs={12} sm={6} md={4} lg={3}>
-              <div className="portfolio-card h-100">
-                <div className="portfolio-image-placeholder">
-                  <div className="image-overlay">
-                    <span className="badge bg-primary">{project.category}</span>
-                  </div>
-                  <div className="image-carousel">
-                    <Carousel fade indicators={false} controls={false} interval={3000}>
-                      {project.photos.slice(0, 3).map(photo => (
-                        <Carousel.Item key={photo.id}>
-                          <div className="portfolio-image-slide">
-                            {renderImageOrColor(
-                              photo,
-                              'carousel-image',
-                              {
-                                width: '100%',
-                                height: '200px',
-                                objectFit: 'cover',
-                                borderRadius: '8px'
-                              }
-                            )}
-                            <div className="slide-content">
-                              <span className="photo-count">
-                                {project.photos.length} photos
-                              </span>
-                            </div>
-                          </div>
-                        </Carousel.Item>
-                      ))}
-                    </Carousel>
-                  </div>
-                </div>
-                <div className="portfolio-content p-3">
-                  <div className="project-meta mb-3">
-                    <span className="badge bg-light text-dark me-2">
-                      <i className="bi bi-clock me-1"></i> {project.duration}
-                    </span>
-                    <span className="badge bg-light text-dark">
-                      <i className="bi bi-rulers me-1"></i> {project.squareFootage}
-                    </span>
-                  </div>
-                  <button 
-                    className="btn btn-sm btn-outline-primary w-100"
-                    onClick={() => handleViewProject(project)}
-                  >
-                    <i className="bi bi-images me-2"></i>
-                    View Project Photos
+        {/* Filters */}
+        <Container className="portfolio-filters">
+          <div className="filter-container">
+            {filters.map(filter => (
+              <FilterButton
+                key={filter.id}
+                filter={filter}
+                activeFilter={activeFilter}
+                onClick={handleFilterChange}
+              />
+            ))}
+          </div>
+        </Container>
+
+        {/* Projects Grid */}
+        <Container className="projects-grid">
+          <Row className="g-4">
+            {filteredProjects.map(project => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onViewProject={handleViewProject}
+              />
+            ))}
+          </Row>
+        </Container>
+
+        {/* CTA Section */}
+        <Container className="portfolio-cta">
+          <Row className="justify-content-center">
+            <Col xs={12} className="text-center">
+              <div className="cta-card">
+                <h2 className="cta-title">Start Your Project Today</h2>
+                <p className="cta-text">
+                  Get a free consultation and quote for your next painting project
+                </p>
+                <div className="cta-buttons">
+                  <button className="btn btn-primary btn-lg me-3">
+                    <i className="bi bi-calendar-check me-2"></i>
+                    Book Consultation
+                  </button>
+                  <button className="btn btn-outline-primary btn-lg">
+                    <i className="bi bi-telephone me-2"></i>
+                    Call Now
                   </button>
                 </div>
               </div>
             </Col>
-          ))}
-        </Row>
-
-        <Row className="mt-5">
-          <Col className="text-center">
-            <button className="btn btn-primary btn-lg px-4">
-              <i className="bi bi-chat-dots me-2"></i>
-              Request a Free Quote
-            </button>
-          </Col>
-        </Row>
+          </Row>
+        </Container>
       </Container>
 
-      <Modal 
-        show={showModal} 
+      {/* Project Modal */}
+      <ProjectModal 
+        project={selectedProject}
+        show={showModal}
         onHide={handleCloseModal}
-        size="xl"
-        centered
-        className="project-modal"
-      >
-        {selectedProject && (
-          <>
-            <Modal.Header closeButton className="border-0 pb-0">
-              <Modal.Title className="w-100">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div>
-                    <h4 className="mb-1">Project Details</h4>
-                  </div>
-                  <span className="badge bg-primary fs-6">{selectedProject.category}</span>
-                </div>
-              </Modal.Title>
-            </Modal.Header>
-            
-            <Modal.Body className="pt-3">
-              <div className="main-carousel-wrapper mb-4">
-                <Carousel fade indicators={true} interval={null}>
-                  {selectedProject.photos.map(photo => (
-                    <Carousel.Item key={photo.id}>
-                      <div className="main-carousel-image">
-                        {renderImageOrColor(
-                          photo,
-                          'main-image',
-                          {
-                            width: '100%',
-                            height: '400px',
-                            objectFit: 'cover',
-                            borderRadius: '8px'
-                          }
-                        )}
-                        <div className="photo-counter">
-                          Photo {photo.id} of {selectedProject.photos.length}
-                        </div>
-                      </div>
-                    </Carousel.Item>
-                  ))}
-                </Carousel>
-              </div>
-
-              <Row>
-                <Col lg={8}>
-                  <div className="project-details mb-4">
-                    <h5 className="mb-3">Project Details</h5>
-                    <Row>
-                      <Col md={6}>
-                        <div className="detail-item mb-3">
-                          <div className="detail-label">
-                            <i className="bi bi-clock text-primary me-2"></i>
-                            Duration
-                          </div>
-                          <div className="detail-value">{selectedProject.duration}</div>
-                        </div>
-                        <div className="detail-item mb-3">
-                          <div className="detail-label">
-                            <i className="bi bi-geo-alt text-primary me-2"></i>
-                            Location
-                          </div>
-                          <div className="detail-value">{selectedProject.location}</div>
-                        </div>
-                      </Col>
-                      <Col md={6}>
-                        <div className="detail-item mb-3">
-                          <div className="detail-label">
-                            <i className="bi bi-rulers text-primary me-2"></i>
-                            Square Footage
-                          </div>
-                          <div className="detail-value">{selectedProject.squareFootage}</div>
-                        </div>
-                        <div className="detail-item mb-3">
-                          <div className="detail-label">
-                            <i className="bi bi-paint-bucket text-primary me-2"></i>
-                            Paint Type
-                          </div>
-                          <div className="detail-value">{selectedProject.paintType}</div>
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
-                </Col>
-
-                <Col lg={4}>
-                  <div className="testimonial-card p-4 mb-4">
-                    <h5 className="mb-3">
-                      <i className="bi bi-chat-quote text-primary me-2"></i>
-                      Client Feedback
-                    </h5>
-                    <p className="testimonial-text">"{selectedProject.testimonial}"</p>
-                    <div className="testimonial-rating">
-                      <i className="bi bi-star-fill text-warning"></i>
-                      <i className="bi bi-star-fill text-warning"></i>
-                      <i className="bi bi-star-fill text-warning"></i>
-                      <i className="bi bi-star-fill text-warning"></i>
-                      <i className="bi bi-star-fill text-warning"></i>
-                      <span className="ms-2">5.0</span>
-                    </div>
-                  </div>
-
-                  <div className="action-card p-4">
-                    <h5 className="mb-3">Interested in Similar Work?</h5>
-                    <p className="text-muted small mb-3">
-                      Contact us for a free consultation and quote
-                    </p>
-                    <button className="btn btn-primary w-100 mb-2">
-                      <i className="bi bi-calendar-check me-2"></i>
-                      Schedule Consultation
-                    </button>
-                    <button className="btn btn-outline-primary w-100">
-                      <i className="bi bi-chat-dots me-2"></i>
-                      Request Quote
-                    </button>
-                  </div>
-                </Col>
-              </Row>
-
-              <div className="thumbnail-gallery mt-4">
-                <h6 className="mb-3">Project Gallery ({selectedProject.photos.length} photos)</h6>
-                <div className="thumbnails-scroll">
-                  <Row className="g-2 flex-nowrap" style={{ overflowX: 'auto' }}>
-                    {selectedProject.photos.map(photo => (
-                      <Col xs={4} md={3} lg={2} key={photo.id} className="flex-shrink-0">
-                        <div className="thumbnail-item">
-                          {renderImageOrColor(
-                            photo,
-                            'thumbnail-image',
-                            {
-                              width: '100%',
-                              height: '100px',
-                              objectFit: 'cover',
-                              borderRadius: '6px',
-                              cursor: 'pointer'
-                            }
-                          )}
-                          <div className="thumbnail-overlay">
-                            <span className="thumbnail-title">Photo {photo.id}</span>
-                          </div>
-                        </div>
-                      </Col>
-                    ))}
-                  </Row>
-                </div>
-              </div>
-            </Modal.Body>
-          </>
-        )}
-      </Modal>
+      />
     </>
   );
 };
 
-export default PortfolioPage;
+export default memo(PortfolioPage);
