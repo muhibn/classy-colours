@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Container, Row, Col, Modal, Carousel, Spinner } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './PortfolioPage.css';
 
@@ -111,7 +112,7 @@ const ProjectCard = memo(({ project, onViewProject }) => {
   );
 });
 
-const ProjectModal = memo(({ project, show, onHide }) => {
+const ProjectModal = memo(({ project, show, onHide, onGetQuote }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   
   const handleSelect = useCallback((selectedIndex) => {
@@ -198,9 +199,8 @@ const ProjectModal = memo(({ project, show, onHide }) => {
         <button className="btn btn-outline-secondary" onClick={onHide}>
           Close Gallery
         </button>
-        <button className="btn btn-primary">
-          <i className="bi bi-whatsapp me-2"></i>
-          Get Free Quote
+        <button className="btn btn-primary" onClick={onGetQuote}>
+<i className="bi bi-envelope me-2"></i>           Get Free Quote
         </button>
       </Modal.Footer>
     </Modal>
@@ -250,6 +250,7 @@ const LoadingSpinner = memo(() => (
 
 // Main Component
 const PortfolioPage = () => {
+  const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -263,14 +264,14 @@ const PortfolioPage = () => {
       require('../../assets/images/portfolio/residential1/interior4.jpeg'),
       require('../../assets/images/portfolio/residential1/interior5.jpeg'),
     ],
-        residential2: [
+    residential2: [
       require('../../assets/images/portfolio/residential2/interior1.jpeg'),
       require('../../assets/images/portfolio/residential2/interior2.jpeg'),
       require('../../assets/images/portfolio/residential2/interior3.jpeg'),
       require('../../assets/images/portfolio/residential2/interior4.jpeg'),
       require('../../assets/images/portfolio/residential2/interior5.jpeg'),
     ],
-    commercail: [
+    commercial: [
       require('../../assets/images/portfolio/commercial1/exterior1.jpeg'),
       require('../../assets/images/portfolio/commercial1/exterior2.jpeg'),
       require('../../assets/images/portfolio/commercial1/exterior3.jpeg'),
@@ -305,7 +306,7 @@ const PortfolioPage = () => {
         { id: 5, image: imagePaths.residential1[4], color: '#FFEAA7', title: 'Final View' }
       ]
     },
-       { 
+    { 
       id: 2, 
       title: 'Modern Apartment Renovation',
       category: 'interior',
@@ -334,11 +335,11 @@ const PortfolioPage = () => {
       rating: 5,
       year: '2023',
       photos: [
-        { id: 1, image: imagePaths.commercail[0], color: '#A29BFE', title: 'Front Entrance' },
-        { id: 2, image: imagePaths.commercail[1], color: '#FD79A8', title: 'Building Facade' },
-        { id: 3, image: imagePaths.commercail[2], color: '#55EFC4', title: 'Side View' },
-        { id: 4, image: imagePaths.commercail[3], color: '#74B9FF', title: 'Detail Work' },
-        { id: 5, image: imagePaths.commercail[4], color: '#FFEAA7', title: 'Completed' }
+        { id: 1, image: imagePaths.commercial[0], color: '#A29BFE', title: 'Front Entrance' },
+        { id: 2, image: imagePaths.commercial[1], color: '#FD79A8', title: 'Building Facade' },
+        { id: 3, image: imagePaths.commercial[2], color: '#55EFC4', title: 'Side View' },
+        { id: 4, image: imagePaths.commercial[3], color: '#74B9FF', title: 'Detail Work' },
+        { id: 5, image: imagePaths.commercial[4], color: '#FFEAA7', title: 'Completed' }
       ]
     },
     { 
@@ -402,7 +403,7 @@ const PortfolioPage = () => {
       duration: '2 weeks',
       location: 'Shopping Mall Unit',
       squareFootage: '3,200 sq ft',
-      paintType: 'Commercial1-grade coating',
+      paintType: 'Commercial-grade coating',
       rating: 4.7,
       year: '2024',
       photos: [
@@ -447,6 +448,35 @@ const PortfolioPage = () => {
   const handleFilterChange = useCallback((filterId) => {
     setActiveFilter(filterId);
   }, []);
+
+  const handleGetQuote = useCallback(() => {
+    // Close modal first
+    setShowModal(false);
+    
+    // Optional: Pass project info to contact page via URL state or context
+    const projectInfo = selectedProject ? {
+      projectTitle: selectedProject.title,
+      projectType: selectedProject.category,
+      projectId: selectedProject.id
+    } : null;
+    
+    // Navigate to contact page with state
+    navigate('/contact', { 
+      state: { 
+        fromPortfolio: true,
+        projectInfo: projectInfo
+      } 
+    });
+  }, [navigate, selectedProject]);
+
+  const handleBookConsultation = useCallback(() => {
+    navigate('/contact', { 
+      state: { 
+        fromCTA: true,
+        serviceType: 'consultation'
+      } 
+    });
+  }, [navigate]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -506,11 +536,11 @@ const PortfolioPage = () => {
                   Get a free consultation and quote for your next painting project
                 </p>
                 <div className="cta-buttons">
-                  <button className="btn btn-primary btn-lg me-3">
+                  <button className="btn btn-primary btn-lg me-3" onClick={handleBookConsultation}>
                     <i className="bi bi-calendar-check me-2"></i>
                     Book Consultation
                   </button>
-                  <button className="btn btn-outline-primary btn-lg">
+                  <button className="btn btn-outline-primary btn-lg" onClick={() => navigate('/contact')}>
                     <i className="bi bi-telephone me-2"></i>
                     Call Now
                   </button>
@@ -526,6 +556,7 @@ const PortfolioPage = () => {
         project={selectedProject}
         show={showModal}
         onHide={handleCloseModal}
+        onGetQuote={handleGetQuote}
       />
     </>
   );

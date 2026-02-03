@@ -3,7 +3,8 @@ import { Container, Row, Col, Card, Button, Modal } from 'react-bootstrap';
 import {
   Brush, House, PaintBucket, Palette, ClipboardCheck,
   Droplet, CheckCircle, ClockHistory, ShieldCheck, Award,
-  Grid, ChevronDown, X
+  Grid, ChevronDown, X,
+  Whatsapp
 } from 'react-bootstrap-icons';
 import './OurServices.css';
 
@@ -310,6 +311,17 @@ const OurServices = () => {
               <Button variant="outline-dark" size="lg" className="px-4 cta-button-secondary">
                 Call Now: 0403 732 881
               </Button>
+              <Button
+                variant="success"
+                size="lg"
+                className="fw-bold py-3"
+                href="https://wa.me/61403732881"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Whatsapp className="me-2" size={18} />
+                Message on WhatsApp
+              </Button>
             </div>
           </Col>
         </Row>
@@ -348,12 +360,12 @@ const OurServices = () => {
                 <ul className="process-steps">
                   {selectedService.details.process.map((step, i) => (
                     <li key={i} className="d-flex mb-2">
-<span
-  className="step-number bg-primary text-white rounded-circle me-1 d-inline-flex align-items-center justify-content-center"
-  style={{ width: '32px', height: '32px' }}
->
-  {i + 1}
-</span>
+                      <span
+                        className="step-number bg-primary text-white rounded-circle me-1 d-inline-flex align-items-center justify-content-center"
+                        style={{ width: '32px', height: '32px' }}
+                      >
+                        {i + 1}
+                      </span>
                       <span>{step}</span>
                     </li>
                   ))}

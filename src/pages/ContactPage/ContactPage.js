@@ -19,7 +19,8 @@ import {
   ClipboardCheck,
   ChatLeftText,
   Send,
-  Palette
+  Palette,
+  Whatsapp
 } from 'react-bootstrap-icons';
 import emailjs from '@emailjs/browser';
 import './ContactPage.css';
@@ -254,7 +255,7 @@ const ContactPage = () => {
                       </Col>
 
                       <Col xs={12}>
-                        <div className="d-grid">
+                        <div className="d-grid mb-3">
                           <Button
                             variant="primary"
                             size="lg"
@@ -268,6 +269,21 @@ const ContactPage = () => {
                                 Submit Inquiry
                               </>
                             )}
+                          </Button>
+                        </div>
+                        
+                        {/* WhatsApp Button */}
+                        <div className="d-grid">
+                          <Button
+                            variant="success"
+                            size="lg"
+                            className="fw-bold py-3"
+                            href="https://wa.me/61403732881"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Whatsapp className="me-2" size={18} />
+                            Message on WhatsApp
                           </Button>
                         </div>
                       </Col>
